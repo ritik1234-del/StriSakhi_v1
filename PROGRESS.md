@@ -20,3 +20,16 @@
 - Not yet pushed to GitHub (needs a one-time sign-in).
 
 **Next**: M1 - extract text from the 3 PDFs.
+
+## 2026-11-09 - M1 Read the PDFs
+**Done**
+- Installed PyMuPDF 2.1 (venv). `src/extract_pdfs.py` saves page-by-page text to `data/text/<n>.json`.
+- 1.pdf: 476 pages, NLSA/NCW "Women and Law" training module, English. 2.pdf: 8 pages, Ministry of WCD note "India's Commitment to Women's Safety" (29 Mar 2025). 3.pdf: 12 pages, Protection of Women from Domestic Violence Act, 2005.
+- All three have real text (no OCR needed). No Hindi in any PDF (0% Devanagari). No garbled characters; bullets and curly quotes are normal. 19 blank pages in 1.pdf (no images).
+
+**Decisions / flags**
+- Old-law warning: 1.pdf mentions IPC/CrPC/Evidence Act 174 times and never BNS/BNSS. 3.pdf has 8 old-law mentions. 2.pdf mentions BNS/BNSS 3 times. Answers citing IPC/CrPC sections must be flagged (BNS/BNSS/BSA since 1 July 2024). Mapping to new sections is NOT done by us; we only warn.
+- Answers will be in Hindi from English sources, so the model must translate; bge-m3 handles cross-language matching.
+
+**Open**: how to show the old-law warning inside answers (decide in M3).
+**Next**: M2 - chunking, bge-m3 embeddings, ChromaDB, search script.

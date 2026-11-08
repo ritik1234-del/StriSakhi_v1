@@ -1,1 +1,6 @@
-# Packages are added milestone by milestone.
+﻿
+pymupdf==2.1
+pymupdf4llm==2.1
+pymupdf_layout==2.1
+
+
