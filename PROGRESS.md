@@ -58,3 +58,24 @@
 - Verify 112 / 181 / 15100.
 
 **Next**: M2 - chunk (one section = one chunk, long ones split), embed with bge-m3, ChromaDB, search script.
+
+## 2026-11-09 - M2 Build the library (embeddings + ChromaDB)
+**Done**
+- Installed chromadb 1.5.9, ollama client 0.6.3. `src/rag_core.py` (shared settings, embed, search), `src/build_index.py` (chunk + embed + save), `src/search.py` (type a question, see top 3 with source).
+- Sources indexed: BNS/BNSS/BSA library JSON (87 sections), 3.pdf Domestic Violence Act split into its 37 sections (page and section kept), 2.pdf (8 pages). 132 records -> 206 chunks (max 1200 characters, 150 overlap, average 776). One section is one chunk unless longer than 1200 characters.
+- The embedding sees "law + section + label + text", the stored/shown text is the exact law text.
+- Hindi questions find the right law (tested: dowry, stalking, FIR, acid, rape punishment, in-laws throwing out, helpline). Search takes about 0.06 s once bge-m3 is warm.
+- Results are de-duplicated so the same section cannot fill all 3 slots.
+
+**Problems found and fixed**
+- OneDrive made package files inside `.venv` unreadable (Errno 22). Moved the virtual environment to `C:\StriSakhi_env` and the database to `C:\StriSakhi_data\chroma` (outside OneDrive). Use `C:\StriSakhi_env\Scripts\python.exe` from now on.
+
+**GPU memory (6 GB RTX 3050)**
+- Gemma on the GPU: total GPU use 5.4 GB of 6.1 GB (Windows uses about 1 GB). bge-m3 forced to CPU (`num_gpu: 0`): both stay loaded side by side, no fighting. Cost: the first search after a pause takes about 5 s (bge-m3 loading), then 0.06 s. First Gemma answer after a pause took about 20 s (cold load).
+- Gemma stays loaded for 5 min by default; we will set keep_alive in M3/M4.
+
+**Open**
+- Questions outside the sources (e.g. property after divorce) still return loosely related sections (distances above about 0.46). M3 must use the system prompt, and maybe a distance cut-off, to say "not in my text".
+- Only 8 pages of 2.pdf and the DV Act cover non-criminal topics; marriage, inheritance and POSH are not in the library.
+
+**Next**: M3 - answers with gemma4:e4b, safety footer, 10 test questions with times.

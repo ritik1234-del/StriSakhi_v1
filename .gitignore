@@ -13,3 +13,4 @@ certs/
 # Big or re-downloadable files (gazette PDFs can be fetched again from the URLs in the library JSON)
 data/official_download/
 data/archive_old/
+.venv/
