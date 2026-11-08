@@ -1,0 +1,11 @@
+﻿.venv/
+__pycache__/
+*.pyc
+data/chroma/
+data/audio_tmp/
+*.wav
+*.webm
+*.m4a
+*.mp4
+certs/
+.env

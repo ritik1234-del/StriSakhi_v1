@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>StriSakhi - Project Explained</title>
+<style>
+  body{font-family:Segoe UI,Arial,sans-serif;max-width:860px;margin:0 auto;padding:16px;line-height:1.6;color:#222;background:#fffaf5}
+  h1{color:#b3205a} h2{color:#7a1a45;border-bottom:2px solid #f0c9d9;padding-bottom:4px;margin-top:32px}
+  .box{background:#fff;border:1px solid #e6d3dc;border-radius:10px;padding:10px 14px;margin:10px 0}
+  .flow{display:flex;flex-direction:column;gap:6px}
+  .step{background:#fde8f0;border-radius:8px;padding:8px 12px}
+  .arrow{text-align:center;color:#b3205a}
+  code{background:#f3e9ee;padding:1px 5px;border-radius:4px}
+  table{border-collapse:collapse;width:100%} td,th{border:1px solid #e6d3dc;padding:6px;text-align:left;vertical-align:top}
+  th{background:#fde8f0}
+  .warn{border-left:5px solid #d98200;background:#fff4e0}
+</style>
+</head>
+<body>
+<h1>StriSakhi - Project Explained</h1>
+<p>StriSakhi ("woman's friend") is a prototype that gives women simple Hindi <b>legal information</b> from three Indian law PDFs. It runs on one laptop and is used from an iPhone browser on home Wi-Fi. It gives <b>information, not legal advice</b>.</p>
+
+<h2>1. The big picture</h2>
+<div class="box">A woman types or speaks a question in Hindi. The laptop finds the most relevant paragraphs in the law PDFs, gives only those paragraphs to a small AI model, and the model writes a short Hindi answer that names the law and section. A fixed safety footer is always added.</div>
+
+<h2>2. Architecture (how a question travels)</h2>
+<div class="flow">
+  <div class="step"><b>iPhone Safari</b> - one web page: text box, ask button, mic button, answer, source, footer.</div>
+  <div class="arrow">&darr; Wi-Fi (https, because the iPhone mic needs it)</div>
+  <div class="step"><b>FastAPI server</b> (Python, on the laptop) - receives the question or audio.</div>
+  <div class="arrow">&darr; (voice only) ffmpeg converts audio &rarr; Gemma transcribes it &rarr; user corrects the text</div>
+  <div class="step"><b>Retriever</b> - turns the question into numbers with <code>bge-m3</code>, asks ChromaDB for the 3 closest chunks of law text.</div>
+  <div class="arrow">&darr;</div>
+  <div class="step"><b>Gemma 4 E4B</b> via Ollama (localhost only) - reads the chunks + system prompt, writes the answer.</div>
+  <div class="arrow">&darr;</div>
+  <div class="step"><b>Response</b> = answer + source (law, section, file, page) + fixed footer from a file. The phone can read it aloud.</div>
+</div>
+
+<h2>3. The pieces</h2>
+<table>
+<tr><th>Piece</th><th>What it is</th><th>Why we chose it</th></tr>
+<tr><td>3 law PDFs</td><td>The only knowledge source.</td><td>Answers must come from real law text.</td></tr>
+<tr><td>Chunks</td><td>PDFs cut into small overlapping pieces (a few paragraphs).</td><td>Small pieces are easier to match and fit in the model's memory.</td></tr>
+<tr><td>bge-m3</td><td>Embedding model: text &rarr; list of numbers capturing meaning.</td><td>Works across Hindi and English.</td></tr>
+<tr><td>ChromaDB</td><td>Database stored on disk that finds chunks with similar meaning.</td><td>Simple, local, no server.</td></tr>
+<tr><td>Gemma 4 E4B</td><td>Small AI model (about 4B effective parameters) run by Ollama.</td><td>Fits a 6 GB GPU; also understands audio.</td></tr>
+<tr><td>FastAPI</td><td>Python web server.</td><td>Small and readable.</td></tr>
+<tr><td>ffmpeg</td><td>Converts the phone's recording to a format Gemma accepts.</td><td>Standard audio tool.</td></tr>
+</table>
+
+<h2>4. The LLM logic (RAG)</h2>
+<p>RAG = Retrieval-Augmented Generation. The model does not "remember" the law; we hand it the relevant text each time.</p>
+<ol>
+  <li><b>Index once:</b> PDF &rarr; text with page numbers &rarr; chunks &rarr; embeddings &rarr; ChromaDB (with file, page, law, section).</li>
+  <li><b>Retrieve:</b> embed the question, fetch the top 3 closest chunks.</li>
+  <li><b>Prompt:</b> system prompt rules + the 3 chunks + the question.</li>
+  <li><b>Generate:</b> Gemma answers in simple, short Hindi, thinking turned off for speed.</li>
+  <li><b>Attach:</b> source line and fixed footer, added by our code, never written by the model.</li>
+</ol>
+<div class="box"><b>System prompt rules:</b> answer only from the given text; simple Hindi; short; name the law and section from the source; if the answer is not in the text, say "I do not know from the available text"; give information, not advice.</div>
+
+<h2>5. Safety and privacy</h2>
+<div class="box warn">
+<ul>
+<li>Footer is fixed text in a file (112, 181, 15100 - TO VERIFY on official sites).</li>
+<li>Never invent laws, sections, numbers or helplines.</li>
+<li>Old IPC/CrPC sections are flagged; since 1 July 2024 BNS, BNSS and BSA replace them.</li>
+<li>No names, phone numbers or audio are stored. Audio is deleted right after transcription.</li>
+<li>Ollama listens on localhost only; only the FastAPI page is reachable on the Wi-Fi.</li>
+</ul></div>
+
+<h2>6. Memory on a 6 GB GPU</h2>
+<p>Gemma 4 E4B (about 6.6 GB on disk, quantised) is already close to the limit, so part of it may run on the CPU/RAM. bge-m3 is small (1.2 GB) and only runs for a moment per question. Ollama loads and unloads them as needed, so they take turns rather than fight; the cost is a short delay when switching.</p>
+
+<h2>7. Milestones</h2>
+<ol start="0">
+<li>Health check and setup</li><li>Read PDFs</li><li>Build the library</li><li>Answers with RAG</li><li>Phone app (text)</li><li>Voice</li><li>Wrap up</li>
+</ol>
+</body>
+</html>
